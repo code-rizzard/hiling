@@ -5,6 +5,7 @@
 *-error.log
 /.idea
 /.nyc_output
+/bin
 /dist
 /dist
 /lib
