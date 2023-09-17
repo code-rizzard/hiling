@@ -17,7 +17,6 @@ export default class Start extends Command {
   };
 
   static args = {
-    file: Args.string({ description: "file to read" }),
     url: Args.url({ description: "url to request" }),
   };
 
