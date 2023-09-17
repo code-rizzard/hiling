@@ -14,6 +14,11 @@ export default class Start extends Command {
       default: 250,
       description: "The timeout between requests",
     }),
+    method: Flags.string({
+      default: "GET",
+      description: "The HTTP method to use",
+      aliases: ["m"],
+    }),
   };
 
   static args = {
@@ -24,6 +29,18 @@ export default class Start extends Command {
     axiosRetry(axios, { retries: 3 });
 
     const { args, flags } = await this.parse(Start);
+
+    let method = flags.method;
+
+    const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+    if (!allowedMethods.includes(method)) {
+      throw new Error(
+        `Invalid method ${method}. Allowed methods are ${allowedMethods.join(
+          ", "
+        )}`
+      );
+    }
+
     let url = args.url;
     let timeout = flags.timeout;
 
@@ -41,7 +58,9 @@ export default class Start extends Command {
       } while (url == undefined);
     }
 
-    ux.action.start(`${chalk.blue("[GET]")} to ${chalk.blue(url)}`);
+    ux.action.start(
+      `${chalk.blue(`[${method.toUpperCase()}]`)} to ${chalk.blue(url)}`
+    );
     let totalRequest = 0;
     let success = 0;
     let failed = 0;
@@ -53,12 +72,14 @@ export default class Start extends Command {
       try {
         await axios.request({
           url: url?.toString()!,
+          method,
         });
         success += 1;
-      } catch (err) {
+      } catch (error) {
+        const err = error as Error;
         if (failed % 50 == 0) {
           this.log(
-            `${chalk.red(`Failed to request ${url}`)} because of ${err}`
+            `${chalk.red(`Failed to request ${url}`)} because of ${err.message}`
           );
         }
         failed += 1;
