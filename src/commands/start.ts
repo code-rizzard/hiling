@@ -3,6 +3,8 @@ import axios from "axios";
 import chalk from "chalk";
 import { URL } from "url";
 import axiosRetry from "axios-retry";
+import * as fs from "fs";
+import * as path from "path";
 
 export default class Start extends Command {
   static description = "Starts the automatic requests.";
@@ -26,6 +28,16 @@ export default class Start extends Command {
   };
 
   public async run(): Promise<void> {
+    const filePath = path.join(path.resolve("./"), "hiling.config.json");
+    let userConfig: any;
+    this.log(filePath);
+    try {
+      userConfig = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      this.log(chalk.gray("Loaded hiling.config.json"));
+    } catch (error) {
+      this.log(error as any);
+    }
+    this.log(userConfig.method);
     axiosRetry(axios, { retries: 3 });
 
     const { args, flags } = await this.parse(Start);
