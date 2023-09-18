@@ -42,7 +42,11 @@ export default class Start extends Command {
       }
     }
 
-    let method = flags.method;
+    flags.method ??= userConfig?.method;
+    flags.timeout ??= userConfig?.timeout;
+    args.url ??= userConfig?.url;
+
+    let method = flags.method || userConfig?.method;
 
     const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
     if (!allowedMethods.includes(method)) {
@@ -52,7 +56,6 @@ export default class Start extends Command {
         )}`
       );
     }
-
     let url = args.url;
 
     if (!url) {
