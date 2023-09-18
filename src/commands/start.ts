@@ -27,20 +27,20 @@ export default class Start extends Command {
     url: Args.url({ description: "url to request" }),
   };
 
-  public async run(): Promise<void> {
+  private async validateConfig() {
+    const { args, flags } = await this.parse(Start);
+
     const filePath = path.join(path.resolve("./"), "hiling.config.json");
     let userConfig: any;
-    this.log(filePath);
-    try {
-      userConfig = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      this.log(chalk.gray("Loaded hiling.config.json"));
-    } catch (error) {
-      this.log(error as any);
+    if (fs.existsSync(filePath)) {
+      this.log(chalk.gray("Found hiling.config.json."));
+      try {
+        userConfig = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        this.log(chalk.gray("Loaded hiling.config.json"));
+      } catch (error) {
+        this.log(error as any);
+      }
     }
-    this.log(userConfig.method);
-    axiosRetry(axios, { retries: 3 });
-
-    const { args, flags } = await this.parse(Start);
 
     let method = flags.method;
 
@@ -54,7 +54,6 @@ export default class Start extends Command {
     }
 
     let url = args.url;
-    let timeout = flags.timeout;
 
     if (!url) {
       do {
@@ -62,13 +61,28 @@ export default class Start extends Command {
           let n = await ux.prompt(`${chalk.green("What is the url?: ")}`, {
             required: true,
           });
-          url = new URL(n);
+          args.url = new URL(n);
         } catch {
           this.log(chalk.red("Invalid URL."));
           continue;
         }
-      } while (url == undefined);
+      } while (args.url == undefined);
     }
+
+    return {
+      args,
+      flags,
+      userConfig,
+    };
+  }
+
+  public async run(): Promise<void> {
+    axiosRetry(axios, { retries: 3 });
+
+    const { args, flags } = await this.validateConfig();
+
+    let { method, timeout } = flags;
+    let { url } = args;
 
     ux.action.start(
       `${chalk.blue(`[${method.toUpperCase()}]`)} to ${chalk.blue(url)}`
