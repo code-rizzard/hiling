@@ -4,12 +4,15 @@
   "description": "A simple cli for automating api request over a network",
   "author": "Richard @fireWizard23",
   "bin": {
-    "hiling": "./bin/run"
+    "hiling": "bin/run"
   },
   "homepage": "https://github.com/fireWizard23/hiling",
   "license": "MIT",
   "main": "dist/index.js",
-  "repository": "fireWizard23/hiling",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fireWizard23/hiling.git"
+  },
   "files": [
     "/bin",
     "/dist",
