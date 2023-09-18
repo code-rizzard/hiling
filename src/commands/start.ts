@@ -5,6 +5,25 @@ import { URL } from "url";
 import axiosRetry from "axios-retry";
 import * as fs from "fs";
 import * as path from "path";
+import * as z from "zod";
+
+const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+
+function isValidHttpMethod(val: string) {
+  return allowedMethods.includes(val.toUpperCase());
+}
+
+const JSON_CONFIG = z.object({
+  url: z.string().url().optional(),
+  method: z
+    .string()
+    .refine(isValidHttpMethod, (val) => ({
+      message: `Invalid method ${val}. Allowed methods are ${allowedMethods.join}.`,
+    }))
+    .optional(),
+  timeout: z.number().int().positive().optional(),
+  maxFails: z.number().int().positive().optional(),
+});
 
 export default class Start extends Command {
   static description = "Starts the automatic requests.";
@@ -31,9 +50,7 @@ export default class Start extends Command {
     url: Args.url({ description: "url to request" }),
   };
 
-  private async validateConfig() {
-    const { args, flags } = await this.parse(Start);
-
+  private async readJsonConfig(): Promise<z.infer<typeof JSON_CONFIG>> {
     const filePath = path.join(path.resolve("./"), "hiling.config.json");
     let userConfig: any;
     if (fs.existsSync(filePath)) {
@@ -45,15 +62,22 @@ export default class Start extends Command {
         this.log(error as any);
       }
     }
+
+    return JSON_CONFIG.parse(userConfig);
+  }
+
+  private async validateConfig() {
+    const { args, flags } = await this.parse(Start);
+
+    const userConfig = await this.readJsonConfig();
     flags.method ||= userConfig?.method ?? "GET";
     flags.timeout ||= userConfig?.timeout ?? 250;
     flags.maxFails ||= userConfig?.maxFails ?? 999999;
-    args.url ??= userConfig?.url;
+    args.url ??= new URL(userConfig?.url ?? "");
 
     let method = flags.method;
 
-    const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
-    if (!allowedMethods.includes(method)) {
+    if (!isValidHttpMethod(method)) {
       throw new Error(
         `Invalid method ${method}. Allowed methods are ${allowedMethods.join(
           ", "
