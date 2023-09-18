@@ -13,13 +13,17 @@ export default class Start extends Command {
 
   static flags = {
     timeout: Flags.integer({
-      default: 250,
+      default: 0,
       description: "The timeout between requests",
     }),
     method: Flags.string({
-      default: "GET",
+      default: "",
       description: "The HTTP method to use",
       aliases: ["m"],
+    }),
+    maxFails: Flags.integer({
+      default: 0,
+      description: "The maximum fails before stopping",
     }),
   };
 
@@ -41,12 +45,12 @@ export default class Start extends Command {
         this.log(error as any);
       }
     }
-
-    flags.method ??= userConfig?.method;
-    flags.timeout ??= userConfig?.timeout;
+    flags.method ||= userConfig?.method ?? "GET";
+    flags.timeout ||= userConfig?.timeout ?? 250;
+    flags.maxFails ||= userConfig?.maxFails ?? 999999;
     args.url ??= userConfig?.url;
 
-    let method = flags.method || userConfig?.method;
+    let method = flags.method;
 
     const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
     if (!allowedMethods.includes(method)) {
@@ -93,7 +97,7 @@ export default class Start extends Command {
     let totalRequest = 0;
     let success = 0;
     let failed = 0;
-    setInterval(async () => {
+    const interval = setInterval(async () => {
       ux.action.status = `${chalk.green(`${success} success`)}. ${chalk.red(
         `${failed} fails.`
       )} / ${chalk.cyan(`${totalRequest} total`)} `;
@@ -112,6 +116,15 @@ export default class Start extends Command {
           );
         }
         failed += 1;
+        if (failed >= flags.maxFails) {
+          clearInterval(interval);
+          this.log(
+            chalk.redBright(
+              `Stopped after ${totalRequest} failed requests due to maxFails of ${flags.maxFails}.`
+            )
+          );
+          ux.action.stop("Stopped due to maxFails.");
+        }
       }
     }, timeout);
   }
