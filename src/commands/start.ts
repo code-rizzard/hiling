@@ -116,7 +116,7 @@ export default class Start extends Command {
           );
         }
         failed += 1;
-        if (failed >= flags.maxFails) {
+        if (failed > flags.maxFails) {
           clearInterval(interval);
           this.log(
             chalk.redBright(
