@@ -140,16 +140,18 @@ class ApiRequester {
     );
 
     const { maxFails, instance, method, timeout, url } = this;
-
+    const abortController = new AbortController();
     const interval = setInterval(async () => {
       ux.action.status = `${chalk.green(`${success} success`)}. ${chalk.red(
         `${failed} fails.`
       )} / ${chalk.cyan(`${totalRequest} total`)} `;
       totalRequest += 1;
       try {
+        // Add cancel token
         await axios.request({
           url: url?.toString()!,
           method,
+          signal: abortController.signal,
         });
         success += 1;
       } catch (error) {
@@ -161,6 +163,7 @@ class ApiRequester {
         }
         failed += 1;
         if (failed > maxFails) {
+          abortController.abort();
           clearInterval(interval);
           instance.log(
             chalk.redBright(
