@@ -115,12 +115,32 @@ export default class Start extends Command {
     let { method, timeout } = flags;
     let { url } = args;
 
-    ux.action.start(
-      `${chalk.blue(`[${method.toUpperCase()}]`)} to ${chalk.blue(url)}`
-    );
+    new ApiRequester(url!, method, timeout, flags.maxFails, this).start();
+  }
+}
+
+class ApiRequester {
+  constructor(
+    private url: URL,
+    private method: string,
+    private timeout: number,
+    private maxFails: number,
+    private instance: Start
+  ) {}
+
+  public async start() {
     let totalRequest = 0;
     let success = 0;
     let failed = 0;
+
+    ux.action.start(
+      `${chalk.blue(`[${this.method.toUpperCase()}]`)} to ${chalk.blue(
+        this.url
+      )}`
+    );
+
+    const { maxFails, instance, method, timeout, url } = this;
+
     const interval = setInterval(async () => {
       ux.action.status = `${chalk.green(`${success} success`)}. ${chalk.red(
         `${failed} fails.`
@@ -135,16 +155,16 @@ export default class Start extends Command {
       } catch (error) {
         const err = error as Error;
         if (failed % 50 == 0) {
-          this.log(
+          instance.log(
             `${chalk.red(`Failed to request ${url}`)} because of ${err.message}`
           );
         }
         failed += 1;
-        if (failed > flags.maxFails) {
+        if (failed > maxFails) {
           clearInterval(interval);
-          this.log(
+          instance.log(
             chalk.redBright(
-              `Stopped after ${totalRequest} failed requests due to maxFails of ${flags.maxFails}.`
+              `Stopped after ${totalRequest} failed requests due to maxFails of ${maxFails}.`
             )
           );
           ux.action.stop(chalk.grey("Stopped due to maxFails."));
