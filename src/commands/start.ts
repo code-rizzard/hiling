@@ -63,7 +63,7 @@ export default class Start extends Command {
       }
     }
 
-    return JSON_CONFIG.parse(userConfig);
+    return JSON_CONFIG.parse(userConfig ?? {});
   }
 
   private async validateConfig() {
@@ -133,16 +133,17 @@ class ApiRequester {
     let success = 0;
     let failed = 0;
 
-    ux.action.start(
-      `${chalk.blue(`[${this.method.toUpperCase()}]`)} to ${chalk.blue(
-        this.url
-      )}`
+    const { maxFails, instance, method, timeout, url } = this;
+
+    ux.action.start(chalk.blue(`[${method}]`));
+    instance.log(
+      chalk.gray(`\nStarting requests, 1 request every ${timeout}ms to ${url}.`)
     );
 
-    const { maxFails, instance, method, timeout, url } = this;
     const abortController = new AbortController();
+
     const interval = setInterval(async () => {
-      ux.action.status = `${chalk.green(`${success} success`)}. ${chalk.red(
+      ux.action.status = ` ${chalk.green(`${success} success`)}. ${chalk.red(
         `${failed} fails.`
       )} / ${chalk.cyan(`${totalRequest} total`)} `;
       totalRequest += 1;
