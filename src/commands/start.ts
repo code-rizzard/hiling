@@ -123,7 +123,7 @@ export default class Start extends Command {
               `Stopped after ${totalRequest} failed requests due to maxFails of ${flags.maxFails}.`
             )
           );
-          ux.action.stop("Stopped due to maxFails.");
+          ux.action.stop(chalk.grey("Stopped due to maxFails."));
         }
       }
     }, timeout);
